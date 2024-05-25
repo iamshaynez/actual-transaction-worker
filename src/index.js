@@ -46,17 +46,31 @@ async function convert_transaction(env, message) {
 
 
 
-function errorToString(e) {
-    return JSON.stringify({
-        message: e.message,
-        stack: e.stack,
-        from: "error worker",
-    });
-}
+
 
 export default {
     async fetch(request, env, ctx) {
         try {
+			// 验证 token，提高 worker 后端安全性
+			try {
+				let headers = parseHeaders(request);
+				const secret_token = headers["x-telegram-bot-api-secret-token"];
+	
+				if (env.TG_SECRET_TOKEN === secret_token) {
+					console.log(`Authentication successful...`);
+				} else {
+					console.log(
+						`Authentication failed with ${secret_token} recieved...`
+					);
+					return new Response("Authentication failed, dropped.", {
+						status: 200,
+					});
+				}
+			} catch (e) {
+				return new Response("dropped.", { status: 200 });
+			}
+
+			// 读取 request 内容
             const body = await request.json();
             console.log(body);
             const text = body.message.text;
@@ -111,3 +125,22 @@ export default {
         }
     },
 };
+
+function parseHeaders(request) {
+    let headers = {};
+    let keys = new Map(request.headers).keys();
+    let key;
+    while ((key = keys.next().value)) {
+        headers[key] = request.headers.get(key);
+        //console.log(`key=[${key}],value=[${headers[key]}]`)
+    }
+    return headers;
+}
+
+function errorToString(e) {
+    return JSON.stringify({
+        message: e.message,
+        stack: e.stack,
+        from: "error worker",
+    });
+}
