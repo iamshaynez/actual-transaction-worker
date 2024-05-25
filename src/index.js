@@ -105,6 +105,7 @@ export default {
             }
 
 			// 对于其他提交的消息，分析可能的账务记录，转换为 Json
+			await sendMessage(env, `报文识别转换中，请稍后……`)
             const transaction_base = await convert_transaction(env, text);
             //await sendMessage(env, message);
             console.log(`transaction_base: ${transaction_base}`);
