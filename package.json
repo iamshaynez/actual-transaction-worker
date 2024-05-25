@@ -1,0 +1,15 @@
+{
+  "name": "actual-transaction-worker",
+  "version": "0.0.0",
+  "devDependencies": {
+    "wrangler": "3.57.1"
+  },
+  "private": true,
+  "scripts": {
+    "start": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "openai": "^4.47.1"
+  }
+}
