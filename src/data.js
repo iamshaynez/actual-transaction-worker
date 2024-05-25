@@ -8,7 +8,7 @@ export const accounts = {
       },
       {
         "id": "0d2cdd9a-5ac7-4062-b809-89c0e13eb8aa",
-        "name": "支付宝",
+        "name": "余额宝",
         "offbudget": false,
         "closed": false
       },

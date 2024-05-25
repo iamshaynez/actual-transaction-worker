@@ -10,45 +10,8 @@
 
 import OpenAI from "openai";
 import { accounts, categories } from "./data";
-
-
-async function save_actual_transaction(env, json) {
-	console.log(`Posting Transaction ${json} to Actual API...`)
-	const base_url = `https://xiaowenz-actual-api-xiaowenz-862c46f1.koyeb.app:443/v1/budgets/e4b0643c-0571-4fdb-b859-1651062ccc51/accounts/${json.transaction.account}/transactions`;
-	return await fetch(
-        base_url,
-        {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-				"accept": "application/json",
-				"budget-encryption-password": env.ACTUAL_ENCRYPTION_PASSWORD,
-				"x-api-key": env.ACTUAL_API_KEY
-            },
-            body: JSON.stringify(json),
-        }
-    );
-}
-async function sendMessage(env, text) {
-    console.log(`sending ${text} to ${env.TG_CHAT_ID}`);
-    return await fetch(
-        `https://api.telegram.org/bot${env.TG_BOT_TOKEN}/sendMessage`,
-        {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                method: "post",
-                text: text,
-                chat_id: env.TG_CHAT_ID,
-                //parse_mode: "Markdown",
-            }),
-        }
-    );
-}
-
-
+import { save_actual_transaction } from "./actual";
+import { sendMessage } from "./telegram";
 
 async function convert_transaction(env, message) {
     const openai = new OpenAI({
@@ -62,7 +25,7 @@ async function convert_transaction(env, message) {
                 content: `把用户提供的信息，转换为一个 JSON 对象。
 				{
 "transaction": {
-	"account_name": "", // 从数组中选择，无法匹配为空 [ "工行储蓄卡","支付宝","工行信用卡","建设银行储蓄卡","萧山农商银行储蓄卡","杭州联合银行储蓄卡","邮储银行储蓄卡","邮储银行信用卡","广发银行信用卡 Safari","中信银行信用卡 万豪","中信银行信用卡 i白金","宁波银行信用卡","南京银行信用卡"]
+	"account_name": "", // 从数组中选择，无法匹配为空 [ "工行储蓄卡","余额宝","工行信用卡","建设银行储蓄卡","萧山农商银行储蓄卡","杭州联合银行储蓄卡","邮储银行储蓄卡","邮储银行信用卡","广发银行信用卡 Safari","中信银行信用卡 万豪","中信银行信用卡 i白金","宁波银行信用卡","南京银行信用卡"]
 	"category_name": "", // 消费类别，从数组中选择 ["Kid","Food","Service","General","Car","Housing","Social","Hobby","Income"]
 	"amount": 7374,  // 金额，消费为负数，收入为正数
 	"payee_name": "", // 商家名称
@@ -99,6 +62,7 @@ function process_transaction(obj) {
 	  obj.transaction.account = findIdByName(accounts.data, obj.transaction.account_name);
 	  obj.transaction.category = findIdByName(categories.data, obj.transaction.category_name);
 	  obj.transaction.amount = obj.transaction.amount * 100;
+	  obj.transaction.cleared = true;
 	} else {
 		throw "Failed on processing transaction...";
 	}
@@ -136,8 +100,8 @@ export default {
 			if(text.toLowerCase().startsWith('save') || text.toLowerCase().startsWith('确认')) {
 				// Post transaction to Actual API
 				console.log(`Pring Reply Message: ${body.message.reply_to_message.text}`)
-				await save_actual_transaction(JSON.parse(body.message.reply_to_message.text));
-
+				const response = await save_actual_transaction(env, JSON.parse(body.message.reply_to_message.text));
+				console.log(`response from api: ${JSON.stringify(response.body)}, status:${response.status}`)
 				await sendMessage(env, `Transaction Saved`);
 				return new Response("Transaction Saved.", { status: 200 });
 			}
@@ -149,7 +113,7 @@ export default {
 
 			const transaction_json = process_transaction(JSON.parse(transaction_base))
 			console.log(`transaction_full: ${JSON.stringify(transaction_json)}`)
-			await sendMessage(env, JSON.stringify(transaction_json));
+			await sendMessage(env, JSON.stringify(transaction_json, null, 2)); //, null, 2)
 
 			return new Response("Completed.", { status: 200 });
 		} catch (e) {
