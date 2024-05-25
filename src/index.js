@@ -11,10 +11,28 @@
 import OpenAI from "openai";
 import { accounts, categories } from "./data";
 
+
+async function save_actual_transaction(env, json) {
+	console.log(`Posting Transaction ${json} to Actual API...`)
+	const base_url = `https://xiaowenz-actual-api-xiaowenz-862c46f1.koyeb.app:443/v1/budgets/e4b0643c-0571-4fdb-b859-1651062ccc51/accounts/${json.transaction.account}/transactions`;
+	return await fetch(
+        base_url,
+        {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+				"accept": "application/json",
+				"budget-encryption-password": env.ACTUAL_ENCRYPTION_PASSWORD,
+				"x-api-key": env.ACTUAL_API_KEY
+            },
+            body: JSON.stringify(json),
+        }
+    );
+}
 async function sendMessage(env, text) {
     console.log(`sending ${text} to ${env.TG_CHAT_ID}`);
     return await fetch(
-        `${env.TELEGRAM_API_DOMAIN}/bot${env.TG_BOT_TOKEN}/sendMessage`,
+        `https://api.telegram.org/bot${env.TG_BOT_TOKEN}/sendMessage`,
         {
             method: "POST",
             headers: {
@@ -87,6 +105,7 @@ function process_transaction(obj) {
 	return obj;
   }
 
+
 function errorToString(e) {
     return JSON.stringify({
         message: e.message,
@@ -114,6 +133,15 @@ export default {
 			const text = body.message.text;
 			console.log(`command text: ${text}`)
 
+			if(text.toLowerCase().startsWith('save') || text.toLowerCase().startsWith('确认')) {
+				// Post transaction to Actual API
+				console.log(`Pring Reply Message: ${body.message.reply_to_message.text}`)
+				await save_actual_transaction(JSON.parse(body.message.reply_to_message.text));
+
+				await sendMessage(env, `Transaction Saved`);
+				return new Response("Transaction Saved.", { status: 200 });
+			}
+
 			const transaction_base = await convert_transaction(env, text);
 			//await sendMessage(env, message);
 			console.log(`transaction_base: ${transaction_base}`)
@@ -121,7 +149,7 @@ export default {
 
 			const transaction_json = process_transaction(JSON.parse(transaction_base))
 			console.log(`transaction_full: ${JSON.stringify(transaction_json)}`)
-
+			await sendMessage(env, JSON.stringify(transaction_json));
 
 			return new Response("Completed.", { status: 200 });
 		} catch (e) {
