@@ -94,9 +94,9 @@ function budget_query_message(budget_json) {
     const { name, budgeted, spent, balance } = budget_json.data;
     const spentPercentage = ((-spent / budgeted) * 100).toFixed(2);
 
-    return `预算科目查询成功！\n---\n预算名称：${name}\n当月总花费：${Math.abs(
+    return `预算科目查询成功！\n---\n预算名称：${name}\n本月总花费：${Math.abs(
         spent / 100
-    )}\n当前预算声誉：${
+    )}\n本月预算声誉：${
         balance / 100
-    }\n当月花费占总预算的百分比：${spentPercentage}%`;
+    }\n本月预算使用率：${spentPercentage}%`;
 }
