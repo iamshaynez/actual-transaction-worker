@@ -4,7 +4,7 @@ export async function save_actual_transaction(env, json) {
     delete json.transaction.account_name;
     delete json.transaction.category_name;
     console.log(`Posting Transaction ${JSON.stringify(json)} to Actual API...`);
-    const base_url = `https://xiaowenz-actual-api-xiaowenz-862c46f1.koyeb.app:443/v1/budgets/e4b0643c-0571-4fdb-b859-1651062ccc51/accounts/${json.transaction.account}/transactions`;
+    const base_url = `${env.ACTUAL_BASE}/accounts/${json.transaction.account}/transactions`;
     console.log(`base_url: ${base_url}`);
     const headers = {
         "Content-Type": "application/json",
@@ -22,7 +22,7 @@ export async function save_actual_transaction(env, json) {
 
 export async function message_category_budget(env, transaction_json) {
     console.log(`Create Message Based on Transaction ${JSON.stringify(transaction_json)}`);
-    const base_url = `https://xiaowenz-actual-api-xiaowenz-862c46f1.koyeb.app:443/v1/budgets/e4b0643c-0571-4fdb-b859-1651062ccc51/months/${getCurrentMonthFormatted()}/categories/${
+    const base_url = `${env.ACTUAL_BASE}/months/${getCurrentMonthFormatted()}/categories/${
         transaction_json.transaction.category
     }`;
     console.log(`base_url: ${base_url}`);
