@@ -9,8 +9,8 @@
  */
 
 import OpenAI from "openai";
-import { accounts, categories } from "./data";
-import { save_actual_transaction } from "./actual";
+
+import { save_actual_transaction, message_category_budget, process_transaction } from "./actual";
 import { sendMessage } from "./telegram";
 
 async function convert_transaction(env, message) {
@@ -44,30 +44,6 @@ async function convert_transaction(env, message) {
     return completion.choices[0].message.content;
 }
 
-function getCurrentDateFormatted() {
-	const now = new Date();
-	
-	const year = now.getFullYear();
-	const month = String(now.getMonth() + 1).padStart(2, '0');
-	const day = String(now.getDate()).padStart(2, '0');
-  
-	return `${year}-${month}-${day}`;
-}
-
-function process_transaction(obj) {
-	// 检查传入的参数是否是对象
-	if (typeof obj === 'object' && obj !== null) {
-	  // 为对象增加一个属性，属性值为字符串 'abc'
-	  obj.transaction.date = getCurrentDateFormatted();
-	  obj.transaction.account = findIdByName(accounts.data, obj.transaction.account_name);
-	  obj.transaction.category = findIdByName(categories.data, obj.transaction.category_name);
-	  obj.transaction.amount = obj.transaction.amount * 100;
-	  obj.transaction.cleared = true;
-	} else {
-		throw "Failed on processing transaction...";
-	}
-	return obj;
-  }
 
 
 function errorToString(e) {
@@ -78,48 +54,60 @@ function errorToString(e) {
     });
 }
 
-function findIdByName(arr, name) {
-	console.log(`arr length: ${arr.length}, name: ${name}`)
-	for (let i = 0; i < arr.length; i++) {
-	  if (arr[i].name === name) {
-		return arr[i].id;
-	  }
-	}
-	return null; // 如果没有匹配的项，返回 null
-}
-
 export default {
-	async fetch(request, env, ctx) {
-		try {
+    async fetch(request, env, ctx) {
+        try {
+            const body = await request.json();
+            console.log(body);
+            const text = body.message.text;
+            console.log(`Message text: ${text}`);
 
-			const body = await request.json();
-			console.log(body);
-			const text = body.message.text;
-			console.log(`command text: ${text}`)
+			// 引用消息并回复关键字，则触发实际的记账操作
+            if (
+                text.toLowerCase().startsWith("save") ||
+                text.toLowerCase().startsWith("确认")
+            ) {
+                // 记账，提交 API
+                console.log(
+                    `Found Reply Message: \n${body.message.reply_to_message.text}`
+                );
+                const response = await save_actual_transaction(
+                    env,
+                    JSON.parse(body.message.reply_to_message.text)
+                );
+				
+				// 如果保存成功，则返回记账成功的提示，并查询相关的预算使用情况
+				// 如果保存失败，则返回记账失败和错误信息
+				const response_body = await response.json();
+                if (response.status == 200) {
+					await sendMessage(env, `记账成功！`);
+                    const post_message = await message_category_budget(env, JSON.parse(body.message.reply_to_message.text));
+                    await sendMessage(env, post_message);
+                } else {
+                    await sendMessage(env, `记账失败: ${response_body}`);
+                }
 
-			if(text.toLowerCase().startsWith('save') || text.toLowerCase().startsWith('确认')) {
-				// Post transaction to Actual API
-				console.log(`Pring Reply Message: ${body.message.reply_to_message.text}`)
-				const response = await save_actual_transaction(env, JSON.parse(body.message.reply_to_message.text));
-				console.log(`response from api: ${JSON.stringify(response.body)}, status:${response.status}`)
-				await sendMessage(env, `Transaction Saved`);
-				return new Response("Transaction Saved.", { status: 200 });
-			}
+                return new Response("Transaction Saved.", { status: 200 });
+            }
 
-			const transaction_base = await convert_transaction(env, text);
-			//await sendMessage(env, message);
-			console.log(`transaction_base: ${transaction_base}`)
-			
+			// 对于其他提交的消息，分析可能的账务记录，转换为 Json
+            const transaction_base = await convert_transaction(env, text);
+            //await sendMessage(env, message);
+            console.log(`transaction_base: ${transaction_base}`);
 
-			const transaction_json = process_transaction(JSON.parse(transaction_base))
-			console.log(`transaction_full: ${JSON.stringify(transaction_json)}`)
-			await sendMessage(env, JSON.stringify(transaction_json, null, 2)); //, null, 2)
+            const transaction_json = process_transaction(
+                JSON.parse(transaction_base)
+            );
+            console.log(
+                `transaction_full: ${JSON.stringify(transaction_json)}`
+            );
+            await sendMessage(env, JSON.stringify(transaction_json, null, 2)); //, null, 2)
 
-			return new Response("Completed.", { status: 200 });
-		} catch (e) {
+            return new Response("Completed.", { status: 200 });
+        } catch (e) {
             console.log(errorToString(e));
+			await sendMessage(env, `出现未知错误：${e.message}`); 
             return new Response(errorToString(e), { status: 200 });
         }
-	},
+    },
 };
-
