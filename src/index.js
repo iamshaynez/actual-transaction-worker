@@ -26,8 +26,8 @@ async function convert_transaction(env, message) {
 				{
 "transaction": {
 	"account_name": "", // 从数组中选择，无法匹配为空 [ "工行储蓄卡","余额宝","工行信用卡","建设银行储蓄卡","萧山农商银行储蓄卡","杭州联合银行储蓄卡","邮储银行储蓄卡","邮储银行信用卡","广发银行信用卡 Safari","中信银行信用卡 万豪","中信银行信用卡 i白金","宁波银行信用卡","南京银行信用卡"]
-	"category_name": "", // 消费类别，从数组中选择 ["Kid","Food","Service","General","Car","Housing","Social","Hobby","Income"]
-	"amount": 7374,  // 金额，消费为负数，收入为正数
+	"category_name": "", // 消费类别，从数组中选择 ["Kid","Food","Service Fee","Buy Staff","Car","Housing","Social","Hobby","Income"]
+	"amount": 0,  // 金额，消费为负数，收入为正数
 	"payee_name": "", // 商家名称
 	"notes":"" // 消费信息
 }

@@ -215,7 +215,7 @@ export const categories = {
       },
       {
         "id": "55c33f82-f3ab-45c7-a10e-8068444d8618",
-        "name": "Service",
+        "name": "Service Fee",
         "is_income": false,
         "hidden": false,
         "group_id": "fc3825fd-b982-4b72-b768-5b30844cf832"
@@ -243,7 +243,7 @@ export const categories = {
       },
       {
         "id": "af375fd4-d759-46b3-bffe-74a856151d57",
-        "name": "General",
+        "name": "Buy Staff",
         "is_income": false,
         "hidden": false,
         "group_id": "fc3825fd-b982-4b72-b768-5b30844cf832"
