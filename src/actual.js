@@ -96,7 +96,7 @@ function budget_query_message(budget_json) {
 
     return `预算科目查询成功！\n---\n预算名称：${name}\n本月总花费：${Math.abs(
         spent / 100
-    )}\n本月预算声誉：${
+    )}\n本月预算剩余：${
         balance / 100
     }\n本月预算使用率：${spentPercentage}%`;
 }
