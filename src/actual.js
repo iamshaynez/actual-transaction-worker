@@ -62,7 +62,8 @@ export function process_transaction(obj) {
             categories.data,
             obj.transaction.category_name
         );
-        obj.transaction.amount = obj.transaction.amount * 100;
+        obj.transaction.amount = Number((obj.transaction.amount * 100).toFixed(0));
+
         obj.transaction.cleared = true;
     } else {
         throw "Failed on processing transaction...";
